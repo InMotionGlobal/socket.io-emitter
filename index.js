@@ -135,6 +135,39 @@ Emitter.prototype.emit = function(){
   return this;
 };
 
+Emitter.prototype.ack = function(){
+  // packet
+  var args = Array.prototype.slice.call(arguments);
+  var packet = {};
+
+
+  packet.type = hasBin(args) ? parser.BINARY_ACK : parser.ACK;
+  packet.id = args.shift();
+  packet.data = args;
+  // set namespace to packet
+  if (this._flags.nsp) {
+    packet.nsp = this._flags.nsp;
+    delete this._flags.nsp;
+  } else {
+    packet.nsp = '/';
+  }
+
+
+  // publish
+  this.redis.publish(this.key, msgpack([packet, {
+    rooms: this._rooms,
+    flags: this._flags
+  }]));
+
+
+  // reset state
+  this._rooms = [];
+  this._flags = {};
+
+
+  return this;
+};
+
 /**
  * Create a redis client from a
  * `host:port` uri string.
